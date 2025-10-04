@@ -1,1 +1,182 @@
-# ashare-sentiment
+# A股市场情绪评分框架
+
+一个轻量级的A股市场情绪量化框架，通过分析市场数据中的多个技术指标来生成每日市场情绪得分。
+
+## 功能特点
+
+- **多维度情绪特征**: 计算7个关键市场情绪指标
+- **滚动标准化**: 消除时间趋势，使不同时期的数据具有可比性
+- **灵活配置**: 支持自定义特征权重和参数设置
+- **数据下载**: 支持从开源数据源（akshare、tushare）自动下载A股数据
+- **易于使用**: 提供命令行工具和Python API
+
+## 情绪特征说明
+
+| 特征名称 | 中文名称 | 计算方式 | 含义 |
+|---------|---------|---------|------|
+| advance_decline | 涨跌比 | 上涨股票占比 | 反映市场整体涨跌情况 |
+| limit_up_down | 涨跌停净比 | 涨停占比 - 跌停占比 | 反映市场极端情绪 |
+| gap_breadth | 跳空广度 | 跳空高开股票占比 | 反映市场开盘情绪 |
+| reversal_breadth | 反转广度 | 日内反转股票占比 | 反映市场纠错能力 |
+| turnover_surge | 成交量激增 | 成交量超中位数股票占比 | 反映市场活跃度 |
+| intraday_volatility | 日内波动率 | 日内波动率中位数 | 反映市场波动程度 |
+| amount_breadth | 成交金额广度 | 成交金额超中位数股票占比 | 反映资金关注度 |
+
+## 快速开始
+
+### 1. 安装
+
+```bash
+pip install -e .
+```
+
+### 2. 准备数据
+
+有两种方式获取数据：
+
+#### 方式一：使用数据下载功能（推荐）
+
+```bash
+# 使用akshare下载数据（免费）
+ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31
+
+# 使用tushare下载数据（需要token）
+ashare-sentiment download --source tushare --start-date 2024-01-01 --end-date 2024-12-31 --token your_token
+```
+
+#### 方式二：使用现有CSV文件
+
+准备包含A股市场数据的CSV文件，至少需要以下列：
+- `trade_date`: 交易日期
+- `ts_code`: 股票代码
+
+可选的有用列：
+- `open, high, low, close`: 开高低收价格
+- `pct_chg`: 涨跌幅
+- `amount`: 成交金额
+
+### 3. 创建配置文件
+
+根据数据来源选择配置文件：
+
+```bash
+# 使用数据下载功能
+cp example_config_download.yaml config.yaml
+
+# 使用现有CSV文件
+cp example_config.yaml config.yaml
+```
+
+### 4. 运行情绪分析
+
+```bash
+ashare-sentiment analyze config.yaml --output sentiment.csv
+```
+
+## 配置说明
+
+### 数据源配置
+
+#### 使用CSV文件
+```yaml
+provider:
+  type: csv                    # 数据源类型
+  path: ./data                 # 数据路径（文件或目录）
+  date_column: trade_date      # 日期列名
+  symbol_column: ts_code       # 股票代码列名
+```
+
+#### 使用数据下载功能
+```yaml
+provider:
+  type: download               # 数据源类型
+  date_column: trade_date      # 日期列名
+  symbol_column: ts_code       # 股票代码列名
+  download:
+    source: akshare            # 数据源：akshare或tushare
+    start_date: "2024-01-01"   # 开始日期
+    end_date: "2024-12-31"     # 结束日期
+    output_dir: "./data"       # 数据保存目录
+    stock_list: null           # 股票代码列表，null表示下载所有A股
+    token: null                # tushare token（仅tushare需要）
+```
+
+### 特征权重配置
+```yaml
+weights:
+  advance_decline: 1.0         # 涨跌比权重
+  limit_up_down: 1.0           # 涨跌停净比权重
+  gap_breadth: 0.8             # 跳空广度权重
+  reversal_breadth: 0.8        # 反转广度权重
+  turnover_surge: 0.8          # 成交量激增权重
+  intraday_volatility: 0.6     # 日内波动率权重
+  amount_breadth: 0.6          # 成交金额广度权重
+```
+
+### 其他参数
+```yaml
+rolling_window: 20             # 滚动标准化窗口大小（天）
+universe_filter: null          # 股票池过滤条件（可选）
+```
+
+## 输出结果
+
+程序会生成包含以下列的CSV文件：
+- `trade_date`: 交易日期
+- `sentiment_score`: 综合情绪得分
+
+情绪得分解释：
+- **正值**: 市场情绪偏乐观
+- **负值**: 市场情绪偏悲观  
+- **绝对值越大**: 情绪越极端
+- **范围**: 通常在-3到+3之间
+
+## 使用场景
+
+- **量化投资**: 作为市场情绪因子用于选股或择时
+- **风险管理**: 监控市场情绪变化，预警市场风险
+- **研究分析**: 分析市场情绪与价格走势的关系
+
+## 命令行工具
+
+### 数据下载命令
+```bash
+# 下载A股数据（akshare，免费）
+ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31
+
+# 下载指定股票数据
+ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31 --stocks 000001.SZ 000002.SZ
+
+# 使用tushare下载（需要token）
+ashare-sentiment download --source tushare --start-date 2024-01-01 --end-date 2024-12-31 --token your_token
+```
+
+### 情绪分析命令
+```bash
+# 运行情绪分析
+ashare-sentiment analyze config.yaml --output sentiment.csv
+```
+
+## 数据源说明
+
+### akshare（推荐）
+- **免费使用**，无需注册
+- 数据质量良好，更新及时
+- 支持A股、港股、美股等市场
+- 安装：`pip install akshare`
+
+### tushare
+- **需要注册获取token**
+- 数据质量高，专业级数据
+- 有免费和付费版本
+- 安装：`pip install tushare`
+- 注册：https://tushare.pro/register
+
+## 注意事项
+
+- 数据下载功能需要安装相应的数据源库
+- 缺少必要列的特征会返回NaN值
+- 情绪得分基于滚动标准化和加权平均计算
+- 建议使用akshare作为免费数据源
+
+

@@ -1,0 +1,26 @@
+# A股情绪评分配置文件示例
+# 此文件展示了如何配置数据源、特征权重和其他参数
+
+# 数据源配置
+provider:
+  type: csv                    # 数据源类型，目前支持csv
+  path: ./data                 # 数据文件或目录路径
+  date_column: trade_date      # 日期列名
+  symbol_column: ts_code       # 股票代码列名
+
+# 特征权重配置
+# 权重越高，该特征对最终情绪得分的影响越大
+weights:
+  advance_decline: 1.0         # 涨跌比权重
+  limit_up_down: 1.0           # 涨跌停净比权重  
+  gap_breadth: 0.8             # 跳空广度权重
+  reversal_breadth: 0.8        # 反转广度权重
+  turnover_surge: 0.8          # 成交量激增权重
+  intraday_volatility: 0.6     # 日内波动率权重
+  amount_breadth: 0.6          # 成交金额广度权重
+
+# 其他参数
+rolling_window: 20             # 滚动标准化窗口大小（天）
+universe_filter: null          # 股票池过滤条件（可选）
+# 示例过滤条件：
+# universe_filter: "close > 5 and amount > 1000000"  # 过滤低价股和小成交额股票

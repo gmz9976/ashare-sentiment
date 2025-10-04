@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ashare-sentiment"
+version = "0.1.0"
+description = "A-share daily market sentiment scoring framework"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "pandas>=2.0.0",
+  "numpy>=1.24.0",
+  "pydantic>=2.5.0",
+  "PyYAML>=6.0.0",
+  "akshare>=1.12.0",
+  "tushare>=1.2.0"
+]
+
+[project.scripts]
+ashare-sentiment = "sentiment_ashare.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
