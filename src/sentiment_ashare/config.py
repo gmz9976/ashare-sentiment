@@ -42,6 +42,7 @@ class WeightsConfig(BaseModel):
     定义各个情绪特征在最终评分中的权重。权重越高，该特征对最终情绪得分的影响越大。
     默认权重基于特征的重要性和稳定性进行设置。
     """
+    # 基础特征权重
     advance_decline: float = 1.0  # 涨跌比权重
     limit_up_down: float = 1.0    # 涨跌停净比权重
     gap_breadth: float = 0.8      # 跳空广度权重
@@ -49,6 +50,19 @@ class WeightsConfig(BaseModel):
     turnover_surge: float = 0.8   # 成交量激增权重
     intraday_volatility: float = 0.6  # 日内波动率权重
     amount_breadth: float = 0.6   # 成交金额广度权重
+    
+    # 高级特征权重
+    advance_ratio: float = 1.2    # 上涨比例权重
+    limit_up_ratio: float = 1.5   # 涨停比例权重
+    limit_down_ratio: float = 1.5 # 跌停比例权重
+    limit_net_ratio: float = 1.3  # 涨跌停净比权重
+    continuation_stocks: float = 1.0  # 连板股票数量权重
+    break_board_ratio: float = 0.8    # 破板率权重
+    seal_board_ratio: float = 0.8     # 封板率权重
+    volume_change_ratio: float = 0.9  # 量能变化权重
+    heaven_earth_count: float = 1.2   # 地天板数量权重
+    abnormal_movement_count: float = 0.7  # 异动股票数量权重
+    auction_strength: float = 0.6     # 集合竞价强度权重
 
 
 class SentimentConfig(BaseModel):

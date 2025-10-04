@@ -1,0 +1,2 @@
+[console_scripts]
+ashare-sentiment = sentiment_ashare.cli:main

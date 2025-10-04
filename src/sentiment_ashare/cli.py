@@ -7,8 +7,8 @@ import pandas as pd
 
 from sentiment_ashare.config import SentimentConfig
 from sentiment_ashare.providers import load_market_data
-from sentiment_ashare.features import compute_basic_features
-from sentiment_ashare.scoring import compute_sentiment_score
+from sentiment_ashare.features import compute_basic_features, compute_advanced_sentiment_features
+from sentiment_ashare.scoring import compute_sentiment_score, get_detailed_sentiment_analysis
 
 
 def _parse_args() -> argparse.Namespace:
@@ -25,6 +25,8 @@ def _parse_args() -> argparse.Namespace:
     analyze_parser = subparsers.add_parser('analyze', help='Run sentiment analysis')
     analyze_parser.add_argument("config", type=str, help="Path to YAML config file")
     analyze_parser.add_argument("--output", type=str, default="sentiment.csv", help="Output CSV path")
+    analyze_parser.add_argument("--advanced", action='store_true', help="Use advanced sentiment features")
+    analyze_parser.add_argument("--analysis", action='store_true', help="Generate detailed analysis report")
     
     # 数据下载命令
     download_parser = subparsers.add_parser('download', help='Download market data')
@@ -35,17 +37,25 @@ def _parse_args() -> argparse.Namespace:
     download_parser.add_argument("--output-dir", default="./data", help="Output directory")
     download_parser.add_argument("--stocks", nargs='+', help="Stock codes to download (optional)")
     download_parser.add_argument("--token", help="Tushare token (required for tushare)")
+    download_parser.add_argument("--max-stocks", type=int, default=100, 
+                                help="Maximum number of stocks to download (default: 100)")
+    download_parser.add_argument("--use-index", action='store_true', default=True,
+                                help="Use index component stocks (default: True)")
+    download_parser.add_argument("--delay", type=float, default=0.5,
+                                help="Request delay in seconds (default: 0.5)")
     
     return parser.parse_args()
 
 
-def _run_analysis(config_path: str, output_path: str) -> None:
+def _run_analysis(config_path: str, output_path: str, advanced: bool = False, analysis: bool = False) -> None:
     """
     运行情绪分析
     
     Args:
         config_path: 配置文件路径
         output_path: 输出文件路径
+        advanced: 是否使用高级特征
+        analysis: 是否生成详细分析报告
     """
     cfg = SentimentConfig.load(config_path)
 
@@ -56,25 +66,79 @@ def _run_analysis(config_path: str, output_path: str) -> None:
     )
 
     # 计算情绪特征
-    feats = compute_basic_features(
-        df,
-        date_column=cfg.provider.date_column,
-        symbol_column=cfg.provider.symbol_column,
-    )
+    if advanced:
+        print("使用高级情绪特征计算...")
+        feats = compute_advanced_sentiment_features(
+            df,
+            date_column=cfg.provider.date_column,
+            symbol_column=cfg.provider.symbol_column,
+        )
+    else:
+        print("使用基础情绪特征计算...")
+        feats = compute_basic_features(
+            df,
+            date_column=cfg.provider.date_column,
+            symbol_column=cfg.provider.symbol_column,
+        )
 
-    # 生成综合情绪得分
+    # 生成综合情绪得分和状态分类
     score = compute_sentiment_score(
         feats,
         weights=cfg.weights,
         rolling_window=cfg.rolling_window,
         date_column=cfg.provider.date_column,
+        enable_classification=True,
     )
 
     # 保存结果
     out_path = Path(output_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     score.to_csv(out_path, index=False)
-    print(f"Saved sentiment scores to {out_path}")
+    print(f"Saved sentiment analysis to {out_path}")
+    
+    # 显示最新状态
+    if len(score) > 0:
+        latest = score.iloc[-1]
+        print(f"\n最新市场情绪状态:")
+        print(f"  日期: {latest[cfg.provider.date_column]}")
+        print(f"  情绪得分: {latest['sentiment_score']:.3f}")
+        print(f"  情绪状态: {latest['sentiment_state']}")
+        if latest.get('is_ice_point', False):
+            print(f"  🧊 冰点信号: 是")
+        if latest.get('warming_signal', False):
+            print(f"  🔥 转暖信号: 是")
+    
+    # 生成详细分析报告
+    if analysis:
+        print("\n生成详细分析报告...")
+        analysis_report = get_detailed_sentiment_analysis(
+            feats,
+            date_column=cfg.provider.date_column,
+        )
+        
+        print(f"\n📊 详细分析报告:")
+        print(f"  当前状态: {analysis_report.get('current_state', '未知')}")
+        print(f"  冰点信号: {'是' if analysis_report.get('is_ice_point', False) else '否'}")
+        print(f"  转暖信号: {'是' if analysis_report.get('warming_signal', False) else '否'}")
+        
+        key_metrics = analysis_report.get('key_metrics', {})
+        print(f"\n📈 关键指标:")
+        for metric, value in key_metrics.items():
+            if isinstance(value, (int, float)):
+                print(f"  {metric}: {value:.3f}")
+        
+        recommendations = analysis_report.get('recommendations', [])
+        if recommendations:
+            print(f"\n💡 投资建议:")
+            for i, rec in enumerate(recommendations, 1):
+                print(f"  {i}. {rec}")
+        
+        # 保存分析报告
+        report_path = out_path.parent / f"analysis_report_{out_path.stem}.json"
+        import json
+        with open(report_path, 'w', encoding='utf-8') as f:
+            json.dump(analysis_report, f, ensure_ascii=False, indent=2)
+        print(f"\n分析报告已保存到: {report_path}")
 
 
 def _download_data(args) -> None:
@@ -92,6 +156,9 @@ def _download_data(args) -> None:
             end_date=args.end_date,
             output_dir=args.output_dir,
             stock_list=args.stocks,
+            max_stocks=args.max_stocks,
+            use_index_stocks=args.use_index,
+            request_delay=args.delay,
         )
     elif args.source == 'tushare':
         if not args.token:
@@ -117,7 +184,7 @@ def main() -> None:
     args = _parse_args()
     
     if args.command == 'analyze':
-        _run_analysis(args.config, args.output)
+        _run_analysis(args.config, args.output, args.advanced, args.analysis)
     elif args.command == 'download':
         _download_data(args)
     else:

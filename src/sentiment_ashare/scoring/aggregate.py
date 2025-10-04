@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from sentiment_ashare.config import WeightsConfig
+from sentiment_ashare.features import classify_sentiment_state, get_sentiment_analysis
 
 
 def _zscore_by_rolling(series: pd.Series, window: int) -> pd.Series:
@@ -37,23 +38,29 @@ def compute_sentiment_score(
     weights: WeightsConfig,
     rolling_window: int,
     date_column: str,
+    enable_classification: bool = True,
 ) -> pd.DataFrame:
     """
-    计算综合市场情绪得分
+    计算综合市场情绪得分和情绪状态分类
     
     将多个情绪特征聚合成单一的情绪得分，通过滚动标准化和加权平均的方式
     消除不同特征间的量纲差异，生成标准化的市场情绪指标。
+    同时进行情绪状态分类和冰点识别。
     
     Args:
         features: 包含每日情绪特征的DataFrame
         weights: 特征权重配置对象
         rolling_window: 滚动标准化窗口大小
         date_column: 日期列名
+        enable_classification: 是否启用情绪状态分类
         
     Returns:
-        pd.DataFrame: 包含日期和情绪得分的DataFrame，列包括：
+        pd.DataFrame: 包含日期、情绪得分和情绪状态的DataFrame，列包括：
             - {date_column}: 日期
             - sentiment_score: 标准化后的综合情绪得分
+            - sentiment_state: 情绪状态分类
+            - is_ice_point: 是否为冰点
+            - warming_signal: 转暖信号
             
     Note:
         情绪得分范围通常在-3到+3之间，正值表示市场情绪偏乐观，
@@ -84,6 +91,33 @@ def compute_sentiment_score(
 
     feats["sentiment_score"] = zsum / (wsum if wsum != 0 else 1.0)
 
-    return feats[[date_column, "sentiment_score"]].reset_index(drop=True)
+    # 情绪状态分类
+    if enable_classification:
+        feats = classify_sentiment_state(feats, date_column=date_column)
+    
+    # 选择输出列
+    output_columns = [date_column, "sentiment_score"]
+    if enable_classification:
+        output_columns.extend(["sentiment_state", "is_ice_point", "warming_signal"])
+
+    return feats[output_columns].reset_index(drop=True)
+
+
+def get_detailed_sentiment_analysis(
+    features: pd.DataFrame,
+    *,
+    date_column: str = "trade_date",
+) -> Dict[str, Any]:
+    """
+    获取详细的情绪分析报告
+    
+    Args:
+        features: 包含情绪特征的DataFrame
+        date_column: 日期列名
+        
+    Returns:
+        Dict[str, Any]: 详细的情绪分析报告
+    """
+    return get_sentiment_analysis(features, date_column=date_column)
 
 
