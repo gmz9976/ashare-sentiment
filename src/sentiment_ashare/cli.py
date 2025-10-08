@@ -43,6 +43,28 @@ def _parse_args() -> argparse.Namespace:
                                 help="Use index component stocks (default: True)")
     download_parser.add_argument("--delay", type=float, default=0.5,
                                 help="Request delay in seconds (default: 0.5)")
+    download_parser.add_argument("--all", action='store_true',
+                                help="Download all stocks (WARNING: may take hours and risk IP ban)")
+    
+    # 回测命令
+    backtest_parser = subparsers.add_parser('backtest', help='Run sentiment backtest')
+    backtest_parser.add_argument("config", type=str, help="Path to YAML config file")
+    backtest_parser.add_argument("--start-date", required=True, help="Start date (YYYY-MM-DD)")
+    backtest_parser.add_argument("--end-date", required=True, help="End date (YYYY-MM-DD)")
+    backtest_parser.add_argument("--output-dir", default="./backtest_reports", help="Output directory")
+    backtest_parser.add_argument("--strategies", nargs='+', default=['ice_point', 'momentum'], 
+                               help="Strategies to test (ice_point, momentum, contrarian)")
+    backtest_parser.add_argument("--benchmarks", nargs='+', 
+                               default=['sh000001', 'sh000300', 'sh000905'],
+                               help="Benchmark indices")
+    backtest_parser.add_argument("--initial-capital", type=float, default=1000000,
+                               help="Initial capital (default: 1000000)")
+    backtest_parser.add_argument("--transaction-cost", type=float, default=0.001,
+                               help="Transaction cost rate (default: 0.001)")
+    backtest_parser.add_argument("--advanced", action='store_true', default=True,
+                               help="Use advanced sentiment features (default: True)")
+    backtest_parser.add_argument("--summary", action='store_true',
+                               help="Print backtest summary")
     
     return parser.parse_args()
 
@@ -159,6 +181,66 @@ def _download_data(args) -> None:
             max_stocks=args.max_stocks,
             use_index_stocks=args.use_index,
             request_delay=args.delay,
+        download_all=args.all,
+    )
+
+
+def _run_backtest(args) -> None:
+    """
+    运行回测
+    
+    Args:
+        args: 命令行参数
+    """
+    from sentiment_ashare.backtest import BacktestEngine, BacktestConfig
+    
+    # 加载情绪评分配置
+    sentiment_config = SentimentConfig.load(args.config)
+    
+    # 创建回测配置
+    backtest_config_dict = {
+        'start_date': args.start_date,
+        'end_date': args.end_date,
+        'initial_capital': args.initial_capital,
+        'transaction_cost': args.transaction_cost,
+        'strategies': args.strategies,
+        'benchmarks': args.benchmarks,
+        'use_advanced_features': args.advanced,
+        'output_dir': args.output_dir
+    }
+    
+    backtest_config = BacktestConfig.from_dict(backtest_config_dict)
+    
+    # 创建并运行回测引擎
+    engine = BacktestEngine(sentiment_config, backtest_config)
+    results = engine.run_backtest()
+    
+    # 打印摘要
+    if args.summary:
+        engine.get_backtest_summary(results)
+    
+    print(f"\n回测完成！详细报告请查看: {results['report_path']}")
+
+
+def _download_data(args) -> None:
+    """
+    下载市场数据
+    
+    Args:
+        args: 命令行参数
+    """
+    from sentiment_ashare.downloaders import download_akshare_data, download_tushare_data
+    
+    if args.source == 'akshare':
+        download_akshare_data(
+            start_date=args.start_date,
+            end_date=args.end_date,
+            output_dir=args.output_dir,
+            stock_list=args.stocks,
+            max_stocks=args.max_stocks,
+            use_index_stocks=args.use_index,
+            request_delay=args.delay,
+            download_all=args.all,
         )
     elif args.source == 'tushare':
         if not args.token:
@@ -177,9 +259,10 @@ def main() -> None:
     """
     A股情绪分析工具主程序入口
     
-    支持两种模式：
+    支持三种模式：
     1. analyze: 运行情绪分析
     2. download: 下载市场数据
+    3. backtest: 运行回测分析
     """
     args = _parse_args()
     
@@ -187,8 +270,10 @@ def main() -> None:
         _run_analysis(args.config, args.output, args.advanced, args.analysis)
     elif args.command == 'download':
         _download_data(args)
+    elif args.command == 'backtest':
+        _run_backtest(args)
     else:
-        print("Please specify a command: 'analyze' or 'download'")
+        print("Please specify a command: 'analyze', 'download', or 'backtest'")
         print("Use --help for more information.")
 
 

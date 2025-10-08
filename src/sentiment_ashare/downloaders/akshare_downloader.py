@@ -25,6 +25,7 @@ def download_akshare_data(
     max_stocks: int = 100,
     use_index_stocks: bool = True,
     request_delay: float = 0.5,
+    download_all: bool = False,
 ) -> Path:
     """
     使用akshare下载A股市场数据（优化版本，减少API调用次数）
@@ -34,6 +35,7 @@ def download_akshare_data(
     2. 限制最大股票数量
     3. 添加请求间隔避免被拉黑
     4. 使用批量下载接口
+    5. 支持下载所有股票（谨慎使用）
     
     Args:
         start_date: 开始日期，格式为'YYYY-MM-DD'
@@ -45,6 +47,7 @@ def download_akshare_data(
         max_stocks: 最大下载股票数量，默认100只
         use_index_stocks: 是否优先使用指数成分股，默认True
         request_delay: 请求间隔（秒），默认0.5秒
+        download_all: 是否下载所有股票，默认False（谨慎使用）
         
     Returns:
         Path: 保存数据的文件路径
@@ -75,7 +78,11 @@ def download_akshare_data(
     
     # 智能选择股票列表
     if stock_list is None:
-        stock_list = _get_optimized_stock_list(use_index_stocks, max_stocks)
+        if download_all:
+            print("⚠️  警告：正在下载所有A股数据，这可能需要很长时间且可能被拉黑！")
+            stock_list = _get_all_stock_list()
+        else:
+            stock_list = _get_optimized_stock_list(use_index_stocks, max_stocks)
     
     print(f"选择了 {len(stock_list)} 只股票进行下载")
     
@@ -347,6 +354,36 @@ def _standardize_columns(df: pd.DataFrame, stock_code: str) -> pd.DataFrame:
     df['trade_date'] = pd.to_datetime(df['trade_date']).dt.strftime('%Y-%m-%d')
     
     return df
+
+
+def _get_all_stock_list() -> List[str]:
+    """
+    获取所有A股股票代码列表
+    
+    Returns:
+        List[str]: 所有A股股票代码列表
+    """
+    if ak is None:
+        raise ImportError("akshare is required. Install it with: pip install akshare")
+    
+    try:
+        print("获取所有A股股票列表...")
+        stock_info = ak.stock_info_a_code_name()
+        all_stocks = stock_info['code'].tolist()
+        print(f"找到 {len(all_stocks)} 只A股股票")
+        return all_stocks
+    except Exception as e:
+        print(f"获取所有股票列表失败: {e}")
+        # 如果失败，尝试使用备用方法
+        try:
+            print("尝试备用方法获取股票列表...")
+            # 使用股票基本信息接口
+            stock_basic = ak.stock_zh_a_spot_em()
+            all_stocks = stock_basic['代码'].tolist()
+            print(f"通过备用方法找到 {len(all_stocks)} 只股票")
+            return all_stocks
+        except Exception as e2:
+            raise ValueError(f"获取股票列表失败: {e}, 备用方法也失败: {e2}")
 
 
 def get_akshare_stock_list() -> list[str]:

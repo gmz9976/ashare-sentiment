@@ -1,0 +1,95 @@
+# A股情绪回测配置文件
+# 此文件展示了如何配置回测参数、策略参数和基准指数
+
+# 数据源配置 - 使用下载功能
+provider:
+  type: download                 # 数据源类型：download表示从开源数据源下载
+  date_column: trade_date        # 日期列名
+  symbol_column: ts_code         # 股票代码列名
+  
+  # 数据下载配置
+  download:
+    source: akshare              # 数据源：akshare（免费）或tushare（需要token）
+    start_date: "2020-01-01"     # 开始日期
+    end_date: "2024-12-31"       # 结束日期
+    output_dir: "./data"         # 数据保存目录
+    stock_list: null             # 股票代码列表，null表示下载所有A股
+    # token: "your_tushare_token"  # tushare token（仅tushare需要）
+
+# 特征权重配置
+# 权重越高，该特征对最终情绪得分的影响越大
+weights:
+  # 基础特征权重
+  advance_decline: 1.0         # 涨跌比权重
+  limit_up_down: 1.0           # 涨跌停净比权重  
+  gap_breadth: 0.8             # 跳空广度权重
+  reversal_breadth: 0.8        # 反转广度权重
+  turnover_surge: 0.8          # 成交量激增权重
+  intraday_volatility: 0.6     # 日内波动率权重
+  amount_breadth: 0.6          # 成交金额广度权重
+  
+  # 高级特征权重
+  advance_ratio: 1.2           # 上涨比例权重
+  limit_up_ratio: 1.5          # 涨停比例权重
+  limit_down_ratio: 1.5        # 跌停比例权重
+  limit_net_ratio: 1.3         # 涨跌停净比权重
+  continuation_stocks: 1.0     # 连板股票数量权重
+  break_board_ratio: 0.8       # 破板率权重
+  seal_board_ratio: 0.8        # 封板率权重
+  volume_change_ratio: 0.9     # 量能变化权重
+  heaven_earth_count: 1.2      # 地天板数量权重
+  abnormal_movement_count: 0.7 # 异动股票数量权重
+  auction_strength: 0.6        # 集合竞价强度权重
+
+# 其他参数
+rolling_window: 20             # 滚动标准化窗口大小（天）
+universe_filter: null          # 股票池过滤条件（可选）
+# 示例过滤条件：
+# universe_filter: "close > 5 and amount > 1000000"  # 过滤低价股和小成交额股票
+
+# 回测配置
+backtest:
+  # 回测参数
+  start_date: "2020-01-01"     # 回测开始日期
+  end_date: "2024-12-31"       # 回测结束日期
+  initial_capital: 1000000     # 初始资金
+  transaction_cost: 0.001      # 交易成本比例（0.1%）
+  
+  # 要测试的策略
+  strategies:
+    - ice_point                # 冰点策略：在冰点买入，转暖卖出
+    - momentum                 # 情绪动量策略：基于情绪得分趋势
+    - contrarian               # 逆向策略：在极度悲观时买入，极度乐观时卖出
+  
+  # 基准指数
+  benchmarks:
+    - sh000001                 # 上证指数
+    - sz399001                 # 深证成指
+    - sh000300                 # 沪深300
+    - sh000905                 # 中证500
+    - sz399006                 # 创业板指
+  
+  # 策略参数配置
+  strategy_params:
+    # 冰点策略参数
+    ice_point:
+      holding_days: 10         # 最大持有天数
+      stop_loss: 0.05          # 止损比例（5%）
+      min_ice_point_score: -2.0 # 最小冰点得分阈值
+    
+    # 情绪动量策略参数
+    momentum:
+      lookback_days: 5         # 动量计算回看天数
+      threshold: 0.5           # 动量阈值
+      min_sentiment_score: -1.0 # 最小情绪得分阈值
+      max_sentiment_score: 1.0  # 最大情绪得分阈值
+    
+    # 逆向策略参数
+    contrarian:
+      extreme_low_threshold: -2.5  # 极端悲观阈值
+      extreme_high_threshold: 2.5  # 极端乐观阈值
+      holding_days: 15             # 最大持有天数
+  
+  # 输出配置
+  output_dir: "./backtest_reports"  # 报告输出目录
+  use_advanced_features: true       # 是否使用高级特征
