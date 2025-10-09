@@ -11,6 +11,10 @@
 - **灵活配置**: 支持自定义特征权重和参数设置
 - **数据下载**: 支持从开源数据源（akshare、tushare）自动下载A股数据
 - **详细分析**: 生成包含投资建议的详细分析报告
+- **回测系统**: 完整的量化回测框架，验证情绪指标有效性
+- **策略开发**: 提供冰点策略、情绪动量策略、逆向策略等多种交易策略
+- **绩效分析**: 20+个绩效指标，与主要指数对比分析
+- **可视化报告**: 专业的HTML报告和图表分析
 - **易于使用**: 提供命令行工具和Python API
 
 ## 情绪特征说明
@@ -117,6 +121,24 @@ ashare-sentiment analyze config.yaml --output sentiment.csv --advanced
 ashare-sentiment analyze config.yaml --output sentiment.csv --advanced --analysis
 ```
 
+### 5. 运行回测分析（新功能）
+
+```bash
+# 基础回测
+ashare-sentiment backtest backtest_config.yaml \
+  --start-date 2020-01-01 \
+  --end-date 2024-12-31 \
+  --summary
+
+# 自定义策略和基准
+ashare-sentiment backtest backtest_config.yaml \
+  --start-date 2020-01-01 \
+  --end-date 2024-12-31 \
+  --strategies ice_point momentum \
+  --benchmarks sh000001 sh000300 sh000905 \
+  --summary
+```
+
 ## 配置说明
 
 ### 数据源配置
@@ -178,8 +200,11 @@ universe_filter: null          # 股票池过滤条件（可选）
 ## 使用场景
 
 - **量化投资**: 作为市场情绪因子用于选股或择时
+- **策略回测**: 验证情绪指标有效性，开发基于情绪的交易策略
 - **风险管理**: 监控市场情绪变化，预警市场风险
 - **研究分析**: 分析市场情绪与价格走势的关系
+- **绩效评估**: 与主要指数对比，评估策略表现
+- **信号验证**: 验证冰点信号和转暖信号的准确性
 
 ## 命令行工具
 
@@ -211,6 +236,33 @@ ashare-sentiment analyze config.yaml --output sentiment.csv --advanced
 
 # 详细分析报告
 ashare-sentiment analyze config.yaml --output sentiment.csv --advanced --analysis
+```
+
+### 回测分析命令
+```bash
+# 基础回测
+ashare-sentiment backtest backtest_config.yaml \
+  --start-date 2020-01-01 \
+  --end-date 2024-12-31 \
+  --summary
+
+# 自定义策略回测
+ashare-sentiment backtest backtest_config.yaml \
+  --start-date 2020-01-01 \
+  --end-date 2024-12-31 \
+  --strategies ice_point momentum contrarian \
+  --benchmarks sh000001 sh000300 sh000905 \
+  --initial-capital 1000000 \
+  --summary
+
+# 完整回测（包含详细报告）
+ashare-sentiment backtest backtest_config.yaml \
+  --start-date 2020-01-01 \
+  --end-date 2024-12-31 \
+  --strategies ice_point momentum \
+  --benchmarks sh000001 sh000300 \
+  --output-dir ./my_backtest_reports \
+  --summary
 ```
 
 ## 数据源说明
@@ -272,6 +324,31 @@ ashare-sentiment download --source akshare --start-date 2024-11-01 --end-date 20
 ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31 --max-stocks 100 --delay 1.0
 ```
 
+## 回测系统说明
+
+### 支持的策略
+- **冰点策略**: 在市场冰点时买入，转暖信号出现时卖出
+- **情绪动量策略**: 基于情绪得分的动量变化进行交易
+- **逆向策略**: 在市场极度悲观时买入，极度乐观时卖出
+
+### 绩效指标
+- **收益率指标**: 总收益率、年化收益率、累计收益率
+- **风险指标**: 夏普比率、索提诺比率、最大回撤、年化波动率
+- **交易指标**: 胜率、盈亏比、卡尔玛比率
+- **相关性分析**: 与上证、深证、沪深300、中证500等指数的相关性
+
+### 回测报告
+- **HTML报告**: 包含图表、表格和详细分析
+- **可视化图表**: 累计收益率、回撤分析、情绪相关性等6种图表
+- **JSON数据**: 原始回测数据导出
+- **情绪有效性分析**: 验证冰点信号和转暖信号的准确性
+
+### 配置文件
+回测系统使用 `backtest_config.yaml` 配置文件，包含：
+- 回测参数（时间范围、初始资金、交易成本）
+- 策略配置（策略类型、参数设置）
+- 基准指数（上证、深证、沪深300、中证500等）
+
 ## 注意事项
 
 - 数据下载功能需要安装相应的数据源库
@@ -280,5 +357,24 @@ ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 20
 - 建议使用akshare作为免费数据源
 - **重要**：避免频繁下载，建议使用优化参数
 - 如果被拉黑，等待几小时后重试
+- 回测结果仅供参考，实际交易需谨慎
 
+## 快速开始回测
+
+如果您想快速体验回测功能，可以：
+
+1. **安装依赖**: `pip install -r requirements.txt`
+2. **运行测试**: `python3 test_backtest.py`
+3. **开始回测**: 
+   ```bash
+   ashare-sentiment backtest backtest_config.yaml \
+     --start-date 2020-01-01 \
+     --end-date 2024-12-31 \
+     --summary
+   ```
+
+更多详细信息请参考：
+- [回测使用指南](BACKTEST_GUIDE.md)
+- [回测实现总结](BACKTEST_IMPLEMENTATION_SUMMARY.md)
+- [完整功能总结](BACKTEST_COMPLETE_SUMMARY.md)
 
