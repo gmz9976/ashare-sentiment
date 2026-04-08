@@ -46,6 +46,29 @@ def _parse_args() -> argparse.Namespace:
     download_parser.add_argument("--all", action='store_true',
                                 help="Download all stocks (WARNING: may take hours and risk IP ban)")
     
+    # WeStock 缓存命令（用于每日收盘后积累 changedist 历史数据）
+    cache_parser = subparsers.add_parser(
+        'westock-cache',
+        help='Cache today\'s changedist data for WeStock provider (run after market close)',
+    )
+    cache_parser.add_argument(
+        "--config", type=str, default=None,
+        help="Path to westock YAML config (for cache_dir). Optional.",
+    )
+    cache_parser.add_argument(
+        "--cache-dir", type=str, default="./westock_cache",
+        help="Cache directory path (default: ./westock_cache)",
+    )
+    cache_parser.add_argument(
+        "--market", type=str, default="hs",
+        help="Market code: hs/sh/sz (default: hs)",
+    )
+    cache_parser.add_argument(
+        "--cli-path", type=str,
+        default="node /Users/mingzhegao/.workbuddy/skills/westock-data/scripts/index.js",
+        help="Path to westock-data CLI",
+    )
+
     # 回测命令
     backtest_parser = subparsers.add_parser('backtest', help='Run sentiment backtest')
     backtest_parser.add_argument("config", type=str, help="Path to YAML config file")
@@ -88,7 +111,15 @@ def _run_analysis(config_path: str, output_path: str, advanced: bool = False, an
     )
 
     # 计算情绪特征
-    if advanced:
+    if cfg.provider.type.lower() == "westock":
+        from sentiment_ashare.features import compute_westock_features
+        print("使用 WeStock 市场聚合特征计算...")
+        feats = compute_westock_features(
+            df,
+            date_column=cfg.provider.date_column,
+            rolling_window=cfg.rolling_window,
+        )
+    elif advanced:
         print("使用高级情绪特征计算...")
         feats = compute_advanced_sentiment_features(
             df,
@@ -163,26 +194,49 @@ def _run_analysis(config_path: str, output_path: str, advanced: bool = False, an
         print(f"\n分析报告已保存到: {report_path}")
 
 
-def _download_data(args) -> None:
+def _run_westock_cache(args) -> None:
     """
-    下载市场数据
+    缓存当日 changedist 数据。
     
-    Args:
-        args: 命令行参数
+    设计用于每个交易日收盘后（15:30 以后）调用，将当日全市场涨跌停分布
+    写入本地缓存。随着时间积累，westock provider 的历史特征将逐渐完整。
+    
+    使用方式（手动）:
+        ashare-sentiment westock-cache --cache-dir ./westock_cache
+    
+    使用方式（定时任务，每个工作日 15:35 自动运行）:
+        ashare-sentiment westock-cache --config example_westock_config.yaml
     """
-    from sentiment_ashare.downloaders import download_akshare_data, download_tushare_data
-    
-    if args.source == 'akshare':
-        download_akshare_data(
-            start_date=args.start_date,
-            end_date=args.end_date,
-            output_dir=args.output_dir,
-            stock_list=args.stocks,
-            max_stocks=args.max_stocks,
-            use_index_stocks=args.use_index,
-            request_delay=args.delay,
-        download_all=args.all,
-    )
+    from sentiment_ashare.config import WeStockConfig
+    from sentiment_ashare.providers.westock_provider import WeStockProvider
+
+    # 优先从 config 文件读取配置，其次用命令行参数
+    if args.config:
+        cfg = SentimentConfig.load(args.config)
+        if cfg.provider.type.lower() != "westock" or cfg.provider.westock is None:
+            print(f"Error: config '{args.config}' is not a westock provider config.")
+            return
+        ws_cfg = cfg.provider.westock
+    else:
+        ws_cfg = WeStockConfig(
+            cli_path=args.cli_path,
+            start_date="2026-01-01",  # 占位，cache_today 不使用日期范围
+            end_date="2026-01-01",
+            market=args.market,
+            cache_dir=args.cache_dir,
+        )
+
+    provider = WeStockProvider(ws_cfg)
+    print(f"正在获取当日 changedist 数据（市场: {ws_cfg.market}）...")
+    cached_date = provider.cache_today()
+
+    if cached_date:
+        cache_path = Path(ws_cfg.cache_dir) / "changedist" / f"{cached_date}.json" if ws_cfg.cache_dir else None
+        print(f"✓ 已成功缓存 {cached_date} 的涨跌区间数据")
+        if cache_path:
+            print(f"  缓存路径: {cache_path}")
+    else:
+        print("✗ 获取数据失败，请检查网络连接或 CLI 路径")
 
 
 def _run_backtest(args) -> None:
@@ -272,8 +326,10 @@ def main() -> None:
         _download_data(args)
     elif args.command == 'backtest':
         _run_backtest(args)
+    elif args.command == 'westock-cache':
+        _run_westock_cache(args)
     else:
-        print("Please specify a command: 'analyze', 'download', or 'backtest'")
+        print("Please specify a command: 'analyze', 'download', 'backtest', or 'westock-cache'")
         print("Use --help for more information.")
 
 
