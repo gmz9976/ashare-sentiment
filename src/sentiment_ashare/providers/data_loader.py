@@ -80,5 +80,37 @@ def load_market_data(
             universe_filter=universe_filter,
         )
     
+    elif config.type.lower() == "westock":
+        from sentiment_ashare.providers.westock_provider import WeStockProvider
+        
+        if config.westock is None:
+            raise ValueError("WeStock provider requires 'westock' config to be specified")
+        
+        provider = WeStockProvider(config.westock)
+        df = provider.fetch()
+        
+        # westock 返回 market-level 数据，不支持 universe_filter
+        if universe_filter:
+            import warnings
+            warnings.warn(
+                "universe_filter is not supported for westock provider, ignoring.",
+                UserWarning,
+                stacklevel=2,
+            )
+        
+        # 宽松验证：仅警告（market-level 无 symbol_column 等逐股列）
+        if required_columns:
+            missing = [c for c in required_columns if c not in df.columns]
+            if missing:
+                import warnings
+                warnings.warn(
+                    f"WeStock provider missing columns: {missing} "
+                    "(may be unsupported for market-level data)",
+                    UserWarning,
+                    stacklevel=2,
+                )
+        
+        return df
+    
     else:
         raise ValueError(f"Unsupported provider type: {config.type}")
