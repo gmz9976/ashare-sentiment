@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict
-from typing import Dict
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
@@ -69,7 +68,7 @@ def compute_sentiment_score(
     feats = features.copy()
     feats = feats.sort_values(date_column)
 
-    weight_map: Dict[str, float] = asdict(weights)
+    weight_map: Dict[str, float] = weights.model_dump()
 
     z_cols = {}
     for name in weight_map.keys():
