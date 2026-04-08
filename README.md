@@ -1,61 +1,41 @@
 # A股市场情绪评分框架
 
-一个轻量级的A股市场情绪量化框架，通过分析市场数据中的多个技术指标来生成每日市场情绪得分。
+> **轻量级 A 股市场情绪量化系统** — 支持多数据源、输出情绪得分与冰点/转暖信号
 
-## 功能特点
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-- **多维度情绪特征**: 计算20+个关键市场情绪指标
-- **情绪状态分类**: 自动识别主升、分歧、修复、退潮、冰点等市场状态
-- **冰点识别**: 智能识别市场冰点，提示转暖信号
-- **滚动标准化**: 消除时间趋势，使不同时期的数据具有可比性
-- **灵活配置**: 支持自定义特征权重和参数设置
-- **数据下载**: 支持从开源数据源（akshare、tushare）自动下载A股数据
-- **详细分析**: 生成包含投资建议的详细分析报告
-- **回测系统**: 完整的量化回测框架，验证情绪指标有效性
-- **策略开发**: 提供冰点策略、情绪动量策略、逆向策略等多种交易策略
-- **绩效分析**: 20+个绩效指标，与主要指数对比分析
-- **可视化报告**: 专业的HTML报告和图表分析
-- **易于使用**: 提供命令行工具和Python API
+---
 
-## 情绪特征说明
+## 功能亮点
 
-### 基础特征
-| 特征名称 | 中文名称 | 计算方式 | 含义 |
-|---------|---------|---------|------|
-| advance_decline | 涨跌比 | 上涨股票占比 | 反映市场整体涨跌情况 |
-| limit_up_down | 涨跌停净比 | 涨停占比 - 跌停占比 | 反映市场极端情绪 |
-| gap_breadth | 跳空广度 | 跳空高开股票占比 | 反映市场开盘情绪 |
-| reversal_breadth | 反转广度 | 日内反转股票占比 | 反映市场纠错能力 |
-| turnover_surge | 成交量激增 | 成交量超中位数股票占比 | 反映市场活跃度 |
-| intraday_volatility | 日内波动率 | 日内波动率中位数 | 反映市场波动程度 |
-| amount_breadth | 成交金额广度 | 成交金额超中位数股票占比 | 反映资金关注度 |
+- **多维度情绪特征** — 20+ 个关键市场情绪指标（涨跌比、涨跌停、量能、集合竞价等）
+- **三种数据源** — `westock`（实时全市场聚合）/ `csv`（本地文件）/ `download`（akshare/tushare）
+- **情绪状态分类** — 自动识别主升、分歧、修复、退潮、冰点等 7 种市场状态
+- **冰点信号识别** — 智能识别市场冰点，提示转暖时机
+- **完整回测系统** — 冰点策略、情绪动量、逆向策略，20+ 绩效指标
+- **可视化报告** — HTML 报告 + 图表分析
 
-### 高级特征
-| 特征名称 | 中文名称 | 计算方式 | 含义 |
-|---------|---------|---------|------|
-| advance_ratio | 上涨比例 | 上涨股票占比 | 市场整体上涨强度 |
-| limit_up_ratio | 涨停比例 | 涨停股票占比 | 市场极端乐观情绪 |
-| limit_down_ratio | 跌停比例 | 跌停股票占比 | 市场极端悲观情绪 |
-| limit_net_ratio | 涨跌停净比 | 涨停占比 - 跌停占比 | 市场情绪偏向 |
-| continuation_stocks | 连板股票数 | 连续涨停股票数量 | 市场持续性强度 |
-| break_board_ratio | 破板率 | 涨停后破板比例 | 市场分歧程度 |
-| seal_board_ratio | 封板率 | 涨停封板比例 | 市场一致性强度 |
-| volume_change_ratio | 量能变化 | 成交量变化比例 | 市场参与度变化 |
-| heaven_earth_count | 地天板数量 | 地天板股票数量 | 市场极端反转信号 |
-| abnormal_movement_count | 异动股票数 | 异常波动股票数量 | 市场异常活跃度 |
-| auction_strength | 集合竞价强度 | 开盘涨幅中位数 | 市场开盘情绪 |
+---
 
-## 情绪状态分类
+## 数据源说明
 
-| 状态名称 | 中文名称 | 特征描述 | 投资建议 |
-|---------|---------|---------|---------|
-| MAIN_RISE | 主升 | 上涨比例>70%，涨停多，量能放大 | 可适当参与强势股，注意风险控制 |
-| WEAK_DIVERGENCE | 弱分歧 | 涨跌相对平衡，分歧较小 | 可适度参与，关注板块轮动 |
-| STRONG_DIVERGENCE | 强分歧 | 涨跌分化明显，破板率高 | 谨慎操作，关注龙头股表现 |
-| WEAK_RECOVERY | 弱修复 | 小幅反弹，修复力度有限 | 谨慎乐观，关注优质标的 |
-| STRONG_RECOVERY | 强修复 | 快速反弹，量能配合 | 可积极参与，关注超跌反弹 |
-| RETREAT | 退潮 | 连续下跌，涨停减少 | 建议观望，等待更好时机 |
-| ICE_POINT | 冰点 | 极度悲观，成交萎缩 | 准备抄底机会，关注转暖信号 |
+### westock（推荐 ✅）
+
+基于腾讯自选股 **westock-data CLI** 获取全市场聚合数据，**无需注册、无需 token、覆盖沪深 5000+ 只股票**。
+
+| 数据来源 | 覆盖范围 | 核心指标 |
+|----------|----------|----------|
+| `changedist hs` | 沪深全市场 | 涨跌停数量、11 个涨幅区间分布 |
+| `market sh000001` | 上证指数历史 | 成交额、主力净流入、日内高低 |
+
+> **注意**：`changedist` 仅支持当日实时查询，历史数据通过每日自动缓存逐步积累（详见下方）。
+
+### csv / download（akshare / tushare）
+
+使用逐股 OHLCV 数据，适合历史回测。
+
+---
 
 ## 快速开始
 
@@ -65,316 +45,276 @@
 pip install -e .
 ```
 
-### 2. 准备数据
+### 2. 使用 westock 数据源（推荐）
 
-有两种方式获取数据：
-
-#### 方式一：使用数据下载功能（推荐）
+#### 创建配置文件
 
 ```bash
-# 使用akshare下载数据（免费，优化版本）
-ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31
-
-# 限制下载股票数量（避免被拉黑）
-ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31 --max-stocks 50
-
-# 增加请求延迟（更安全）
-ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31 --delay 1.0
-
-# 使用tushare下载数据（需要token）
-ashare-sentiment download --source tushare --start-date 2024-01-01 --end-date 2024-12-31 --token your_token
+cp example_westock_config.yaml config.yaml
 ```
 
-#### 方式二：使用现有CSV文件
+修改 `config.yaml` 中的日期范围：
 
-准备包含A股市场数据的CSV文件，至少需要以下列：
-- `trade_date`: 交易日期
-- `ts_code`: 股票代码
-
-可选的有用列：
-- `open, high, low, close`: 开高低收价格
-- `pct_chg`: 涨跌幅
-- `amount`: 成交金额
-
-### 3. 创建配置文件
-
-根据数据来源选择配置文件：
-
-```bash
-# 使用数据下载功能
-cp example_config_download.yaml config.yaml
-
-# 使用现有CSV文件
-cp example_config.yaml config.yaml
+```yaml
+provider:
+  type: westock
+  westock:
+    start_date: "2025-01-01"
+    end_date: "2026-04-08"
+    market: hs
+    cache_dir: "./westock_cache"   # 历史数据缓存目录
 ```
 
-### 4. 运行情绪分析
+#### 运行情绪分析
 
 ```bash
-# 基础分析
 ashare-sentiment analyze config.yaml --output sentiment.csv
-
-# 高级分析（推荐）
-ashare-sentiment analyze config.yaml --output sentiment.csv --advanced
-
-# 详细分析报告
-ashare-sentiment analyze config.yaml --output sentiment.csv --advanced --analysis
 ```
 
-### 5. 运行回测分析（新功能）
+输出示例：
+```
+使用 WeStock 市场聚合特征计算...
+Saved sentiment analysis to sentiment.csv
+
+最新市场情绪状态:
+  日期: 2026-04-08
+  情绪得分: 0.832
+  情绪状态: 主升
+```
+
+#### 每日缓存（建议每个交易日收盘后运行）
 
 ```bash
-# 基础回测
-ashare-sentiment backtest backtest_config.yaml \
-  --start-date 2020-01-01 \
-  --end-date 2024-12-31 \
-  --summary
+# 手动运行
+ashare-sentiment westock-cache --cache-dir ./westock_cache
 
-# 自定义策略和基准
-ashare-sentiment backtest backtest_config.yaml \
-  --start-date 2020-01-01 \
-  --end-date 2024-12-31 \
-  --strategies ice_point momentum \
-  --benchmarks sh000001 sh000300 sh000905 \
-  --summary
+# 或使用配置文件
+ashare-sentiment westock-cache --config config.yaml
 ```
+
+> 系统已内置**定时调度**（每个工作日 15:35 自动运行），缓存目录逐步积累历史数据后，历史情绪特征将全面有效。
+
+---
+
+### 3. 使用 CSV / akshare 数据源
+
+```bash
+# 下载 akshare 数据（免费）
+ashare-sentiment download --source akshare \
+  --start-date 2024-01-01 --end-date 2024-12-31 \
+  --max-stocks 100 --delay 1.0
+
+# 运行分析
+cp example_config_download.yaml config.yaml
+ashare-sentiment analyze config.yaml --output sentiment.csv --advanced
+```
+
+---
+
+## 情绪特征说明
+
+### 基础特征（7 个）
+
+| 特征名 | 中文名 | 说明 |
+|--------|--------|------|
+| `advance_decline` | 涨跌比 | 上涨股票占比（排除平盘） |
+| `limit_up_down` | 涨跌停净比 | `(涨停 - 跌停) / 总数` |
+| `gap_breadth` | 强势股广度 | `(涨停 + >7% 区间) / 总数` |
+| `reversal_breadth` | 反转候选广度 | `-2%~-5% 区间 / 总数` |
+| `turnover_surge` | 量能激增 | 当日成交额 / MA20 成交额 |
+| `intraday_volatility` | 日内波动率 | `(最高 - 最低) / 开盘` |
+| `amount_breadth` | 成交金额广度 | 同 advance_decline 代理 |
+
+### 高级特征（10+ 个）
+
+| 特征名 | 中文名 | 说明 |
+|--------|--------|------|
+| `advance_ratio` | 上涨比例 | 上涨股票 / 总数 |
+| `limit_up_ratio` | 涨停比例 | 涨停股票 / 总数（正向） |
+| `limit_down_ratio` | 跌停比例 | `-(跌停 / 总数)`（已取反，跌停多→负向） |
+| `limit_net_ratio` | 涨跌停净比 | 同 limit_up_down |
+| `continuation_stocks` | 连板代理 | 涨停数量近似代理 |
+| `volume_change_ratio` | 量能变化率 | 日成交额环比变化 |
+| `abnormal_movement_count` | 大幅波动数 | 涨停+跌停+>7%+<-7% 合计 |
+| `auction_strength` | 开盘强度代理 | 指数当日涨跌幅 |
+
+> **符号约定**：`limit_down_ratio` 在特征层已取反，权重配置保持正值即可正确驱动负向评分。
+
+---
+
+## 情绪状态分类
+
+| 状态 | 中文名 | 特征描述 | 操作建议 |
+|------|--------|----------|----------|
+| `MAIN_RISE` | 主升 | 上涨比例 >70%，涨停多，量能放大 | 可参与强势股，注意风险 |
+| `WEAK_DIVERGENCE` | 弱分歧 | 涨跌相对平衡 | 适度参与，关注板块轮动 |
+| `STRONG_DIVERGENCE` | 强分歧 | 涨跌分化明显，破板率高 | 谨慎操作 |
+| `WEAK_RECOVERY` | 弱修复 | 小幅反弹，力度有限 | 谨慎乐观 |
+| `STRONG_RECOVERY` | 强修复 | 快速反弹，量能配合 | 可积极参与超跌反弹 |
+| `RETREAT` | 退潮 | 连续下跌，涨停减少 | 建议观望 |
+| `ICE_POINT` | 冰点 | 极度悲观，成交萎缩 | 关注转暖信号，准备抄底 |
+
+---
 
 ## 配置说明
 
-### 数据源配置
+### westock 配置（`example_westock_config.yaml`）
 
-#### 使用CSV文件
 ```yaml
 provider:
-  type: csv                    # 数据源类型
-  path: ./data                 # 数据路径（文件或目录）
-  date_column: trade_date      # 日期列名
-  symbol_column: ts_code       # 股票代码列名
-```
+  type: westock
+  date_column: trade_date
+  westock:
+    start_date: "2025-01-01"
+    end_date: "2026-04-08"
+    market: hs                     # hs=沪深 | sh=沪市 | sz=深市
+    index_codes:
+      - sh000001                   # 主指数（用于量能数据）
+      - sh000300
+    timeout_seconds: 30
+    retry_count: 3
+    cache_dir: "./westock_cache"   # 建议设置，避免重复调用
 
-#### 使用数据下载功能
-```yaml
-provider:
-  type: download               # 数据源类型
-  date_column: trade_date      # 日期列名
-  symbol_column: ts_code       # 股票代码列名
-  download:
-    source: akshare            # 数据源：akshare或tushare
-    start_date: "2024-01-01"   # 开始日期
-    end_date: "2024-12-31"     # 结束日期
-    output_dir: "./data"       # 数据保存目录
-    stock_list: null           # 股票代码列表，null表示下载所有A股
-    token: null                # tushare token（仅tushare需要）
-```
-
-### 特征权重配置
-```yaml
 weights:
-  advance_decline: 1.0         # 涨跌比权重
-  limit_up_down: 1.0           # 涨跌停净比权重
-  gap_breadth: 0.8             # 跳空广度权重
-  reversal_breadth: 0.8        # 反转广度权重
-  turnover_surge: 0.8          # 成交量激增权重
-  intraday_volatility: 0.6     # 日内波动率权重
-  amount_breadth: 0.6          # 成交金额广度权重
+  advance_decline: 1.0
+  limit_up_ratio: 1.5
+  limit_down_ratio: 1.5            # 特征值已取反，权重用正值即可
+  limit_net_ratio: 1.3
+  # ... 其余权重见示例文件
+
+rolling_window: 20
 ```
 
-### 其他参数
+### CSV 数据配置（`example_config.yaml`）
+
 ```yaml
-rolling_window: 20             # 滚动标准化窗口大小（天）
-universe_filter: null          # 股票池过滤条件（可选）
+provider:
+  type: csv
+  path: ./data
+  date_column: trade_date
+  symbol_column: ts_code
+
+weights:
+  advance_decline: 1.0
+  limit_up_down: 1.0
+  # ...
+
+rolling_window: 20
 ```
 
-## 输出结果
+---
 
-程序会生成包含以下列的CSV文件：
-- `trade_date`: 交易日期
-- `sentiment_score`: 综合情绪得分
+## 命令行工具完整参考
 
-情绪得分解释：
-- **正值**: 市场情绪偏乐观
-- **负值**: 市场情绪偏悲观  
-- **绝对值越大**: 情绪越极端
-- **范围**: 通常在-3到+3之间
-
-## 使用场景
-
-- **量化投资**: 作为市场情绪因子用于选股或择时
-- **策略回测**: 验证情绪指标有效性，开发基于情绪的交易策略
-- **风险管理**: 监控市场情绪变化，预警市场风险
-- **研究分析**: 分析市场情绪与价格走势的关系
-- **绩效评估**: 与主要指数对比，评估策略表现
-- **信号验证**: 验证冰点信号和转暖信号的准确性
-
-## 命令行工具
-
-### 数据下载命令
 ```bash
-# 下载A股数据（akshare，免费，优化版本）
-ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31
+# 情绪分析
+ashare-sentiment analyze <config.yaml> --output <out.csv> [--advanced] [--analysis]
 
-# 限制下载股票数量（避免被拉黑）
-ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31 --max-stocks 50
+# westock 当日数据缓存（每日收盘后运行）
+ashare-sentiment westock-cache [--config <config.yaml>] [--cache-dir ./westock_cache]
 
-# 增加请求延迟（更安全）
-ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31 --delay 1.0
+# 下载 akshare/tushare 数据
+ashare-sentiment download --source akshare \
+  --start-date 2024-01-01 --end-date 2024-12-31 \
+  [--max-stocks 100] [--delay 1.0] [--all]
 
-# 下载指定股票数据
-ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31 --stocks 000001.SZ 000002.SZ
-
-# 使用tushare下载（需要token）
-ashare-sentiment download --source tushare --start-date 2024-01-01 --end-date 2024-12-31 --token your_token
-```
-
-### 情绪分析命令
-```bash
-# 基础情绪分析
-ashare-sentiment analyze config.yaml --output sentiment.csv
-
-# 高级情绪分析（推荐）
-ashare-sentiment analyze config.yaml --output sentiment.csv --advanced
-
-# 详细分析报告
-ashare-sentiment analyze config.yaml --output sentiment.csv --advanced --analysis
-```
-
-### 回测分析命令
-```bash
-# 基础回测
-ashare-sentiment backtest backtest_config.yaml \
-  --start-date 2020-01-01 \
-  --end-date 2024-12-31 \
-  --summary
-
-# 自定义策略回测
-ashare-sentiment backtest backtest_config.yaml \
-  --start-date 2020-01-01 \
-  --end-date 2024-12-31 \
+# 回测分析
+ashare-sentiment backtest <backtest_config.yaml> \
+  --start-date 2020-01-01 --end-date 2024-12-31 \
   --strategies ice_point momentum contrarian \
-  --benchmarks sh000001 sh000300 sh000905 \
-  --initial-capital 1000000 \
-  --summary
-
-# 完整回测（包含详细报告）
-ashare-sentiment backtest backtest_config.yaml \
-  --start-date 2020-01-01 \
-  --end-date 2024-12-31 \
-  --strategies ice_point momentum \
   --benchmarks sh000001 sh000300 \
-  --output-dir ./my_backtest_reports \
   --summary
 ```
 
-## 数据源说明
+---
 
-### akshare（推荐）
-- **免费使用**，无需注册
-- 数据质量良好，更新及时
-- 支持A股、港股、美股等市场
-- 安装：`pip install akshare`
+## 回测系统
 
-### tushare
-- **需要注册获取token**
-- 数据质量高，专业级数据
-- 有免费和付费版本
-- 安装：`pip install tushare`
-- 注册：https://tushare.pro/register
+### 支持策略
 
-## 数据下载优化策略
+| 策略 | 说明 |
+|------|------|
+| `ice_point` | 冰点买入策略：在情绪冰点时入场，转暖信号时出场 |
+| `momentum` | 情绪动量策略：跟随情绪得分方向交易 |
+| `contrarian` | 逆向策略：在极度乐观时做空/回避，极度悲观时入场 |
 
-为了避免akshare访问频率限制，项目采用了以下优化策略：
+### 绩效指标（20+）
 
-### 1. 智能股票选择
-- **优先选择指数成分股**：上证50、沪深300、中证500、创业板指等
-- **代表性更强**：指数成分股更能代表市场整体情况
-- **数据更稳定**：大市值股票数据质量更高
+- **收益率**：总收益率、年化收益率、累计收益率
+- **风险**：夏普比率、索提诺比率、最大回撤、年化波动率
+- **交易**：胜率、盈亏比、卡尔玛比率
+- **对比**：与上证、深证、沪深300、中证500 的相关性
 
-### 2. 限制下载数量
-- **默认限制100只股票**：避免下载过多数据
-- **可自定义数量**：通过`--max-stocks`参数调整
-- **建议50-100只**：既能代表市场又避免被拉黑
+---
 
-### 3. 请求间隔控制
-- **默认0.5秒延迟**：每次请求间隔0.5秒
-- **随机延迟**：添加0-0.2秒随机延迟
-- **失败重试**：连续失败时自动增加延迟
+## 项目结构
 
-### 4. 批量下载优化
-- **指数行情接口**：优先使用批量接口
-- **单只股票补充**：批量失败时回退到单只下载
-- **智能重试**：检测到频繁失败时自动调整策略
-
-## 使用建议
-
-### 安全下载（推荐）
-```bash
-# 下载50只指数成分股，延迟1秒
-ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31 --max-stocks 50 --delay 1.0
+```
+ashare-sentiment/
+├── src/sentiment_ashare/
+│   ├── config.py                   # 配置类（SentimentConfig / WeStockConfig）
+│   ├── cli.py                      # 命令行入口
+│   ├── providers/
+│   │   ├── westock_provider.py     # WeStock CLI 数据提供者 ⭐
+│   │   ├── csv_provider.py         # CSV 文件数据提供者
+│   │   └── data_loader.py          # 统一数据加载入口
+│   ├── features/
+│   │   ├── westock_features.py     # WeStock 专用特征计算 ⭐
+│   │   ├── basic.py                # 基础特征（逐股数据）
+│   │   ├── advanced.py             # 高级特征（逐股数据）
+│   │   └── sentiment_classifier.py # 情绪状态分类
+│   ├── scoring/
+│   │   └── aggregate.py            # 情绪得分聚合（滚动Z-score）
+│   └── backtest/                   # 回测引擎
+├── example_westock_config.yaml     # WeStock 数据源配置示例 ⭐
+├── example_config.yaml             # CSV 数据源配置示例
+├── example_config_download.yaml    # 下载数据源配置示例
+├── WESTOCK_DESIGN.md               # WeStock 适配技术设计文档
+└── requirements.txt
 ```
 
-### 快速测试
-```bash
-# 下载少量数据测试
-ashare-sentiment download --source akshare --start-date 2024-11-01 --end-date 2024-11-30 --max-stocks 20
+---
+
+## 数据流架构
+
+```
+westock-data CLI
+  ├── changedist hs {date}   →  全市场涨跌停分布（5000+ 只股票）
+  └── market sh000001 {range} →  指数历史行情（成交额、主力净流入）
+          ↓
+    WeStockProvider.fetch()
+          ↓
+    market-level DataFrame（每行一天）
+          ↓
+    compute_westock_features()
+          ↓
+    17 个情绪特征列（与 WeightsConfig 键名对应）
+          ↓
+    compute_sentiment_score()
+    （滚动Z-score + 加权求和 + 情绪分类）
+          ↓
+    sentiment.csv（得分 + 状态 + 冰点信号）
 ```
 
-### 完整数据（谨慎使用）
-```bash
-# 下载更多数据，需要更长时间
-ashare-sentiment download --source akshare --start-date 2024-01-01 --end-date 2024-12-31 --max-stocks 100 --delay 1.0
-```
-
-## 回测系统说明
-
-### 支持的策略
-- **冰点策略**: 在市场冰点时买入，转暖信号出现时卖出
-- **情绪动量策略**: 基于情绪得分的动量变化进行交易
-- **逆向策略**: 在市场极度悲观时买入，极度乐观时卖出
-
-### 绩效指标
-- **收益率指标**: 总收益率、年化收益率、累计收益率
-- **风险指标**: 夏普比率、索提诺比率、最大回撤、年化波动率
-- **交易指标**: 胜率、盈亏比、卡尔玛比率
-- **相关性分析**: 与上证、深证、沪深300、中证500等指数的相关性
-
-### 回测报告
-- **HTML报告**: 包含图表、表格和详细分析
-- **可视化图表**: 累计收益率、回撤分析、情绪相关性等6种图表
-- **JSON数据**: 原始回测数据导出
-- **情绪有效性分析**: 验证冰点信号和转暖信号的准确性
-
-### 配置文件
-回测系统使用 `backtest_config.yaml` 配置文件，包含：
-- 回测参数（时间范围、初始资金、交易成本）
-- 策略配置（策略类型、参数设置）
-- 基准指数（上证、深证、沪深300、中证500等）
+---
 
 ## 注意事项
 
-- 数据下载功能需要安装相应的数据源库
-- 缺少必要列的特征会返回NaN值
-- 情绪得分基于滚动标准化和加权平均计算
-- 建议使用akshare作为免费数据源
-- **重要**：避免频繁下载，建议使用优化参数
-- 如果被拉黑，等待几小时后重试
-- 回测结果仅供参考，实际交易需谨慎
+1. **westock 历史数据**：`changedist` API 仅支持当日查询，历史涨跌停数据需通过每日缓存逐步积累。建议从今天起每天收盘后运行 `westock-cache` 命令（或依赖内置定时任务自动执行）。
+2. **数据量与评分质量**：滚动窗口为 20 天，至少需要 20 个交易日的数据才能获得有效情绪得分。
+3. **部分特征降级**：`break_board_ratio`（破板率）、`seal_board_ratio`（封板率）、`heaven_earth_count`（地天板）无法从聚合数据计算，自动返回 NaN（评分时跳过），可在配置中将权重设为 0 显式禁用。
+4. **akshare 频率限制**：使用 akshare 下载数据时建议设置 `--max-stocks 50 --delay 1.0` 避免被限速。
 
-## 快速开始回测
+---
 
-如果您想快速体验回测功能，可以：
+## 开发文档
 
-1. **安装依赖**: `pip install -r requirements.txt`
-2. **运行测试**: `python3 test_backtest.py`
-3. **开始回测**: 
-   ```bash
-   ashare-sentiment backtest backtest_config.yaml \
-     --start-date 2020-01-01 \
-     --end-date 2024-12-31 \
-     --summary
-   ```
-
-更多详细信息请参考：
+- [WeStock 适配技术设计文档](WESTOCK_DESIGN.md)
 - [回测使用指南](BACKTEST_GUIDE.md)
 - [回测实现总结](BACKTEST_IMPLEMENTATION_SUMMARY.md)
-- [完整功能总结](BACKTEST_COMPLETE_SUMMARY.md)
 
+---
+
+## License
+
+MIT License — 仅供学习和研究使用，不构成投资建议。
