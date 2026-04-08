@@ -7,6 +7,26 @@ import yaml
 from pydantic import BaseModel, Field, ValidationError
 
 
+class WeStockConfig(BaseModel):
+    """
+    westock-data CLI 数据源配置
+    """
+    cli_path: str = Field(
+        default="node /Users/mingzhegao/.workbuddy/skills/westock-data/scripts/index.js",
+        description="westock-data CLI 完整调用路径（含 node 前缀）"
+    )
+    start_date: str = Field(description="开始日期，格式: YYYY-MM-DD")
+    end_date: str = Field(description="结束日期，格式: YYYY-MM-DD")
+    market: str = Field(default="hs", description="市场代码: 'hs'（沪深）| 'sh' | 'sz'")
+    index_codes: list[str] = Field(
+        default_factory=lambda: ["sh000001", "sh000300", "sh000905"],
+        description="配套指数代码，用于获取成交额和资金流向"
+    )
+    timeout_seconds: int = Field(default=30, description="CLI 调用超时秒数")
+    retry_count: int = Field(default=3, description="失败重试次数")
+    cache_dir: Optional[str] = Field(default=None, description="本地缓存目录，None 表示不缓存")
+
+
 class DownloadConfig(BaseModel):
     """
     数据下载配置类
@@ -28,11 +48,12 @@ class ProviderConfig(BaseModel):
     用于配置数据提供者的相关参数，包括数据源类型、路径、列名等。
     支持CSV格式的数据源和数据下载功能。
     """
-    type: str = Field(description="provider type: 'csv' 或 'download'")
+    type: str = Field(description="provider type: 'csv' | 'download' | 'westock'")
     path: Optional[str] = Field(default=None, description="data file or directory path for CSV provider")
     date_column: str = Field(default="trade_date", description="date column name in source data")
     symbol_column: str = Field(default="ts_code", description="symbol column name in source data")
     download: Optional[DownloadConfig] = Field(default=None, description="数据下载配置（当type为download时使用）")
+    westock: Optional[WeStockConfig] = Field(default=None, description="westock provider 配置")
 
 
 class WeightsConfig(BaseModel):
